@@ -67,8 +67,8 @@ Just copy `bat2influx.template.ini` to `bat2influx.ini` and edit the values to y
 specific to my setup might still be hard-coded
 - Dockerize
 - Make path of config file configurable via command line parameter (maybe not needed once containerized)
-- Reducing the effect of jitter: Maybe set wating time to 0.9s instead of 1s, thus making sure that every 1s-Interval
-has **at least** one measurement. Best to make this conigurable.
+- ~~Reducing the effect of jitter: Maybe set wating time to 0.9s instead of 1s, thus making sure that every 1s-Interval
+has **at least** one measurement. Best to make this conigurable.~~ (Done)
 
 ## Why?
 
