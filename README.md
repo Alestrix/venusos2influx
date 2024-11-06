@@ -12,7 +12,7 @@ user is free to use thease measurements to their liking, like displaying in a Gr
 user in parallel. It then triggers the sending of a telemetry message from VenusOS by publishing
 an empty message to `N/<serialnumber>/vebus/275/Dc/0/+` (every second) and to
 `N/<serialnumber>/vebus/275/Soc` (every 10 seconds) and stores the received values inside an
-InfluxDB database into a measurement (both configurable) under these fields: Current, Power,
+InfluxDB database into a measurement (database name and measurement name are both configurable) under these fields: Current, Power,
 Voltage, Soc.
 
 ## How it looks
