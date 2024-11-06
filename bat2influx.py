@@ -39,6 +39,7 @@ MQTT_PASSWORD = ''
 MQTT_TOPICS = []
 MQTT_REGEXS = []
 MQTT_CLIENT_ID = 'MQTTInfluxDBBridge'
+MQTT_SERIAL = ''
 
 influxdb_client = None
 
@@ -52,7 +53,7 @@ def loadConfig(configFile="bat2influx.ini"):
     Config.read(configFile)
 
     global INFLUXDB_ADDRESS, INFLUXDB_USER, INFLUXDB_PASSWORD, INFLUXDB_DATABASE, INFLUXDB_MEASUREMENT, INFLUXDB_PORT
-    global MQTT_ADDRESS, MQTT_USER, MQTT_PASSWORD, MQTT_TOPICS, MQTT_REGEXS
+    global MQTT_ADDRESS, MQTT_USER, MQTT_PASSWORD, MQTT_TOPICS, MQTT_REGEXS, MQTT_SERIAL
 
     INFLUXDB_ADDRESS = Config.get("Influx", "address")
     INFLUXDB_PORT = Config.get("Influx", "port", fallback=INFLUXDB_PORT)
@@ -63,9 +64,9 @@ def loadConfig(configFile="bat2influx.ini"):
 
     MQTT_ADDRESS = Config.get("Battery", "address")
     MQTT_PASSWORD = Config.get("Battery", "password")
-    serial = Config.get("Battery", "serial")
-    MQTT_TOPICS = [f'N/{serial}/vebus/275/Dc/0/+', f'N/{serial}/vebus/275/Soc']
-    MQTT_REGEXS = [f'N/{serial}/vebus/275/Dc/0/([^/]+)', f'N/{serial}/vebus/275/([^/]+)$']
+    MQTT_SERIAL = Config.get("Battery", "serial")
+    MQTT_TOPICS = [f'N/{MQTT_SERIAL}/vebus/275/Dc/0/+', f'N/{MQTT_SERIAL}/vebus/275/Soc']
+    MQTT_REGEXS = [f'N/{MQTT_SERIAL}/vebus/275/Dc/0/([^/]+)', f'N/{MQTT_SERIAL}/vebus/275/([^/]+)$']
 
 
 def on_mqtt_connect(client, userdata, flags, rc):
@@ -121,10 +122,10 @@ def _init_influxdb_database():
 def pub(mqtt_client):
     i = 0
     while True:
-        mqtt_client.publish("R/c0619ab44e6d/vebus/275/Dc/0", "")
+        mqtt_client.publish("R/{MQTT_SERIAL}/vebus/275/Dc/0", "")
         i = (i + 1) % 10
         if i == 0:
-            mqtt_client.publish("R/c0619ab44e6d/vebus/275/Soc", "")
+            mqtt_client.publish("R/{MQTT_SERIAL}/vebus/275/Soc", "")
         sleep(1)
 
 def main():
