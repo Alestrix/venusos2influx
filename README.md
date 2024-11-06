@@ -80,5 +80,7 @@ Why I didn't want to use [venus-influx-loader](https://github.com/victronenergy/
 The code is heavily based on [this](https://gist.github.com/zufardhiyaulhaq/fe322f61b3012114379235341b935539)
 Gist by [Zufar Dhiyaulhaq](https://github.com/zufardhiyaulhaq).
 
+## Legal
+
 Victron Energy are not affiliated with this project in any way. Do not bother them if you have any problems
 with the code or if the code breaks your battery or causes your house to burn to the ground.
