@@ -67,6 +67,14 @@ specific to my setup might still be hard-coded
 - Dockerize
 - Make path of config file configurable via command line parameter (maybe not needed once containerized)
 
+## Why?
+
+Why I didn't want to use [venus-influx-loader](https://github.com/victronenergy/venus-influx-loader):
+
+- It doesn't support password authentication towards the battery (i.e. towards the MQTT server)
+- It reads a gazillion times more values and stores them into influx than I'm interested in
+- It creates one measurement for every value stored, I wanted the values as different fields inside the same measurement
+
 ## Mentions
 
 The code is heavily based on [this](https://gist.github.com/zufardhiyaulhaq/fe322f61b3012114379235341b935539)
