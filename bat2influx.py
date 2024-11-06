@@ -122,7 +122,8 @@ def _init_influxdb_database():
 def pub(mqtt_client):
     i = 0
     while True:
-        mqtt_client.publish("R/{MQTT_SERIAL}/vebus/275/Dc/0", "")
+        mqtt_client.publish(f"R/{MQTT_SERIAL}/vebus/275/Dc/0", "")
+        #print(f'publishing to "R/{MQTT_SERIAL}/vebus/275/Dc/0"')
         i = (i + 1) % 10
         if i == 0:
             mqtt_client.publish("R/{MQTT_SERIAL}/vebus/275/Soc", "")
