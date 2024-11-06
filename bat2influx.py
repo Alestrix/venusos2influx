@@ -4,6 +4,10 @@
 
 This script receives MQTT data and saves those to InfluxDB.
 
+This code inherits a lot of code from Zufar Dhiyaulhaq's gist here:
+https://gist.github.com/zufardhiyaulhaq/fe322f61b3012114379235341b935539
+
+
 """
 
 import re
