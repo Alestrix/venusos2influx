@@ -17,7 +17,8 @@ Voltage, Soc.
 
 ## How it looks
 
-A simple influxQL SELECT statement (I hate flux) looks like this:
+Once the measurements are stored into Influx, a simple influxQL SELECT statement (I hate flux) looks
+like this:
 
 ```
 > select * from dc where time > now()-5s 
@@ -42,7 +43,7 @@ time                           Current Power Soc  Voltage
 2024-11-06T13:54:23.919809621Z               15.5 
 ```
 
-By grouping these measurements by second the fields can be mapped to the same measurement:
+By grouping these measurements by second, the fields can be mapped to the same measurement:
 ```
 > select mean(Current) as Current, mean(Power) as Power, mean(Voltage) as Voltage, mean(Soc) as Soc from dc where time > now()- 5s group by time(1s)
 name: dc
@@ -66,6 +67,8 @@ Just copy `bat2influx.template.ini` to `bat2influx.ini` and edit the values to y
 specific to my setup might still be hard-coded
 - Dockerize
 - Make path of config file configurable via command line parameter (maybe not needed once containerized)
+- Reducing the effect of jitter: Maybe set wating time to 0.9s instead of 1s, thus making sure that every 1s-Interval
+has **at least** one measurement. Best to make this conigurable.
 
 ## Why?
 
