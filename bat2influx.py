@@ -23,6 +23,7 @@ Config = configparser.ConfigParser()
 
 
 INFLUXDB_ADDRESS = 'influx'
+INFLUXDB_PORT = 8086
 INFLUXDB_USER = ''
 INFLUXDB_PASSWORD = ''
 INFLUXDB_DATABASE = 'bat'
@@ -35,7 +36,7 @@ MQTT_TOPICS = []
 MQTT_REGEXS = []
 MQTT_CLIENT_ID = 'MQTTInfluxDBBridge'
 
-influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
+influxdb_client = None
 
 
 class SensorData(NamedTuple):
@@ -46,10 +47,11 @@ class SensorData(NamedTuple):
 def loadConfig(configFile="bat2influx.ini"):
     Config.read(configFile)
 
-    global INFLUXDB_ADDRESS, INFLUXDB_USER, INFLUXDB_PASSWORD, INFLUXDB_DATABASE, INFLUXDB_MEASUREMENT
+    global INFLUXDB_ADDRESS, INFLUXDB_USER, INFLUXDB_PASSWORD, INFLUXDB_DATABASE, INFLUXDB_MEASUREMENT, INFLUXDB_PORT
     global MQTT_ADDRESS, MQTT_USER, MQTT_PASSWORD, MQTT_TOPICS, MQTT_REGEXS
 
-    INFLUXDB_ADDRESS =  Config.get("Influx", "address")
+    INFLUXDB_ADDRESS = Config.get("Influx", "address")
+    INFLUXDB_PORT = Config.get("Influx", "port", fallback=INFLUXDB_PORT)
     INFLUXDB_USER =  Config.get("Influx", "user", fallback=INFLUXDB_USER)
     INFLUXDB_PASSWORD =  Config.get("Influx", "password", fallback=INFLUXDB_PASSWORD)
     INFLUXDB_DATABASE =  Config.get("Influx", "db", fallback=INFLUXDB_DATABASE)
@@ -62,15 +64,15 @@ def loadConfig(configFile="bat2influx.ini"):
     MQTT_REGEXS = [f'N/{serial}/vebus/275/Dc/0/([^/]+)', f'N/{serial}/vebus/275/([^/]+)$']
 
 
-def on_connect(client, userdata, flags, rc):
-    """ The callback for when the client receives a CONNACK response from the server."""
+def on_mqtt_connect(client, userdata, flags, rc):
+    """ The callback for when the client receives a CONNACK response from the MQTT server."""
     print('Connected with result code ' + str(rc))
     for topic in MQTT_TOPICS:
         client.subscribe(topic)
 
 
-def on_message(client, userdata, msg):
-    """The callback for when a PUBLISH message is received from the server."""
+def on_mqtt_message(client, userdata, msg):
+    """The callback for when a PUBLISH message is received from the MQTT server."""
     # print(msg.topic + ' ' + str(msg.payload))
     sensor_data = _parse_mqtt_message(msg.topic, msg.payload.decode('utf-8'))
     if sensor_data is not None:
@@ -105,6 +107,8 @@ def _send_sensor_data_to_influxdb(sensor_data):
 
 
 def _init_influxdb_database():
+    global influxdb_client
+    influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
     databases = influxdb_client.get_list_database()
     if len(list(filter(lambda x: x['name'] == INFLUXDB_DATABASE, databases))) == 0:
         influxdb_client.create_database(INFLUXDB_DATABASE)
@@ -124,8 +128,8 @@ def main():
 
     mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, MQTT_CLIENT_ID)
     mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
-    mqtt_client.on_connect = on_connect
-    mqtt_client.on_message = on_message
+    mqtt_client.on_connect = on_mqtt_connect
+    mqtt_client.on_message = on_mqtt_message
 
     mqtt_client.connect(MQTT_ADDRESS, 1883)
 
