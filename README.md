@@ -72,11 +72,16 @@ has **at least** one measurement. Best to make this conigurable.~~ (Done)
 
 ## Why?
 
-Why I didn't want to use [venus-influx-loader](https://github.com/victronenergy/venus-influx-loader):
-
+Q: Why I didn't want to use [venus-influx-loader](https://github.com/victronenergy/venus-influx-loader):  
+A:  
 - It doesn't support password authentication towards the battery (i.e. towards the MQTT server)
 - It reads a gazillion times more values and stores them into influx than I'm interested in
 - It creates one measurement for every value stored, I wanted the values as different fields inside the same measurement
+
+Q: Why is the project called venusos2influx and the program bat2influx?  
+A: I changed my mind after I had set up the name and forgot about it. Now I don't bother changing it again.
+
+
 
 ## Mentions
 
