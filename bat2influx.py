@@ -128,7 +128,7 @@ def pub(mqtt_client):
         #print(f'publishing to "R/{MQTT_SERIAL}/vebus/275/Dc/0"')
         i = (i + 1) % 10
         if i == 0:
-            mqtt_client.publish("R/{MQTT_SERIAL}/vebus/275/Soc", "")
+            mqtt_client.publish(f"R/{MQTT_SERIAL}/vebus/275/Soc", "")
         sleep(MQTT_INTERVAL)
 
 def main():
