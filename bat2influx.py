@@ -40,8 +40,8 @@ influxdb_client = None
 
 
 class SensorData(NamedTuple):
-    location: str
     measurement: str
+    key: str
     value: float
 
 def loadConfig(configFile="bat2influx.ini"):
@@ -85,21 +85,21 @@ def _parse_mqtt_message(topic, payload):
     if not match:
         match = re.match(MQTT_REGEXS[1], topic)
     if match:
-        location = INFLUXDB_MEASUREMENT
-        measurement = match.group(1)
-        if measurement in ['Temperature', 'MaxChargeCurrent']:
+        measurement = INFLUXDB_MEASUREMENT
+        key = match.group(1)
+        if key in ['Temperature', 'MaxChargeCurrent']:
             return None
         value = json.loads(payload)["value"]
-        return SensorData(location, measurement, round(float(value), 4))
+        return SensorData(measurement, key, round(float(value), 4))
     return None
 
 
 def _send_sensor_data_to_influxdb(sensor_data):
     json_body = [
         {
-            'measurement': sensor_data.location,
+            'measurement': sensor_data.measurement,
             'fields': {
-                sensor_data.measurement: sensor_data.value
+                sensor_data.key: sensor_data.value
             }
         }
     ]
