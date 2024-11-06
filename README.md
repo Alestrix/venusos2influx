@@ -57,6 +57,27 @@ time                 Current Power Voltage Soc
 2024-11-06T13:56:36Z 0       22    52.26   
 ```
 
+## How to run
+
+### Run directly with Python
+
+You need to have pip installed and use it to install the dependencies:  
+`python -m pip install -r requirements.txt`
+
+Then run the application:  
+`python bat2influx.py`
+
+### Run with Docker
+
+If you have `bat2influx.ini` at a different path or use a different name, edit the `docker-compose.yml`
+accordingly. Otherwise the defaults should be ok for you.
+
+Then run it via docker in the directory where `docker-compose.yml` resides:  
+`docker compose up -d`
+
+This uses the docker image I created using the `Dockerfile` in this repository and pushed
+to `alestrix/bat2influx:latest`.
+
 ## Configuration
 
 Just copy `bat2influx.template.ini` to `bat2influx.ini` and edit the values to your needs.
@@ -65,8 +86,8 @@ Just copy `bat2influx.template.ini` to `bat2influx.ini` and edit the values to y
 
 - Testing - nobody except for me has ever run this code, so I have no idea whether some pecurilarities only
 specific to my setup might still be hard-coded
-- Dockerize
-- Make path of config file configurable via command line parameter (maybe not needed once containerized)
+- ~~Dockerize~~ (Done)
+- ~~Make path of config file configurable via command line parameter~~ (not needed when containerized)
 - ~~Reducing the effect of jitter: Maybe set wating time to 0.9s instead of 1s, thus making sure that every 1s-Interval
 has **at least** one measurement. Best to make this conigurable.~~ (Done)
 
@@ -80,8 +101,6 @@ A:
 
 Q: Why is the project called venusos2influx and the program bat2influx?  
 A: I changed my mind after I had set up the name and forgot about it. Now I don't bother changing it again.
-
-
 
 ## Mentions
 

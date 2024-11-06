@@ -1,0 +1,6 @@
+services:
+  bat2influx:
+    image: alestrix/bat2influx
+    volumes:
+     - ./bat2influx.ini:/app/bat2influx.ini
+    build: .
