@@ -57,6 +57,10 @@ time                 Current Power Voltage Soc
 2024-11-06T13:56:36Z 0       22    52.26   
 ```
 
+## How to configure
+
+Just copy `bat2influx.template.ini` to `bat2influx.ini` and edit the values to your needs.
+
 ## How to run
 
 ### Run directly with Python
@@ -77,10 +81,6 @@ Then run it via docker in the directory where `docker-compose.yml` resides:
 
 This uses the docker image I created using the `Dockerfile` in this repository and pushed
 to `alestrix/bat2influx:latest`.
-
-## Configuration
-
-Just copy `bat2influx.template.ini` to `bat2influx.ini` and edit the values to your needs.
 
 ## To-Dos
 
