@@ -90,4 +90,5 @@ repetedly published an empty message to a certain topic.
 Victron Energy are not affiliated with this project in any way. Do not bother them if you have any problems
 with the code. Also, do not bother them or me if the code breaks your battery or causes your house to burn
 to the ground. I only guarantee that this code works mostly on my setup and so far my house still stands. Other
-than that there is no guarantee of any kind regarding the safety of this code or the fitness for any purpose.
+than that there is no guarantee of any kind, especially not regarding the safety of this code or the fitness
+for any purpose.
