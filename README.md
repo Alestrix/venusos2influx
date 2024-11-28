@@ -110,7 +110,7 @@ Gist by [Zufar Dhiyaulhaq](https://github.com/zufardhiyaulhaq).
 Notable changes:
 - config file
 - triggering of sending of telemetry data from the battery - my VenusOS didn't publish any data unless I
-repetedly published an empty message to a certain topic.
+repeatedly published an empty message to a certain topic.
 
 ## Legal
 
