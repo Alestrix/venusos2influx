@@ -6,15 +6,19 @@ on:
   pull_request:
     branches: [ "master" ]
 
+env:
+  IMAGE_NAME: bat2influx
+  
 jobs:
-
-  build:
-
+  build_and_push:
     runs-on: ubuntu-latest
-
+    env:
+      IMAGE_ID: ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME:latest
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ghcr.io/alestrix/bat2influx:latest
+      run: docker build . --file Dockerfile --tag $IMAGE_ID
+    - name: Log in to registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
     - name: Push Docker image
-      run: docker push ghcr.io/alestrix/bat2influx:latest
+      run: docker push $IMAGE_ID
