@@ -10,9 +10,12 @@ jobs:
   build_and_push:
     runs-on: ubuntu-latest
     env:
-      IMAGE_ID: ghcr.io/${{ github.repository_owner }}/bat2influx:latest
+      REPO: ${{ github.repository_owner }}
     steps:
     - uses: actions/checkout@v4
+    - name: create IMAGE_ID with lowercase repo-owner (shame on GitHub for making this so cumbersome!)
+      run: |
+        echo "IMAGE_ID=ghcr.io/${REPO@L}/bat2influx:latest" >> ${GITHUB_ENV}
     - name: Build the Docker image
       run: docker build . --file Dockerfile --tag $IMAGE_ID
     - name: Log in to registry
