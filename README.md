@@ -79,8 +79,8 @@ accordingly. Otherwise the defaults should be ok for you.
 Then run it via docker in the directory where `docker-compose.yml` resides:  
 `docker compose up -d`
 
-This uses the docker image I created using the `Dockerfile` in this repository and pushed
-to `alestrix/bat2influx:latest`.
+This uses the docker image I created using the `Dockerfile` via GitHib Actions and pushed
+to `ghcr.io/alestrix/bat2influx:latest`.
 
 ## To-Dos
 
