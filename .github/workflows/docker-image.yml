@@ -6,14 +6,11 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  IMAGE_NAME: bat2influx
-  
 jobs:
   build_and_push:
     runs-on: ubuntu-latest
     env:
-      IMAGE_ID: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+      IMAGE_ID: ghcr.io/${{ github.repository_owner }}/bat2influx:latest
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
