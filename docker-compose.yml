@@ -1,6 +1,7 @@
 services:
   bat2influx:
     image: alestrix/bat2influx
+    container_name: bat2influx
     volumes:
      - ./bat2influx.ini:/app/bat2influx.ini
     build: .
