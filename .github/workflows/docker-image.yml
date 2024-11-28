@@ -15,6 +15,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ghcr.io/alestrix/bat2influx:$(date +%s)
-    # - name: Push Docker image
-    #   run: docker push ghcr.io/alestrix/bat2influx:$(date +%s)
+      run: docker build . --file Dockerfile --tag ghcr.io/alestrix/bat2influx:latest
+    - name: Push Docker image
+      run: docker push ghcr.io/alestrix/bat2influx:latest
