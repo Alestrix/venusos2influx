@@ -1,6 +1,7 @@
 services:
   bat2influx:
     image: ghcr.io/alestrix/bat2influx:latest
+    restart: always
     container_name: bat2influx
     volumes:
      - ./bat2influx.ini:/app/bat2influx.ini
