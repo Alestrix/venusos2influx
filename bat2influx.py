@@ -97,6 +97,8 @@ def _parse_mqtt_message(topic, payload):
         if key in ['Temperature', 'MaxChargeCurrent']:
             return None
         value = json.loads(payload)["value"]
+        if value == None:
+            return None
         return SensorData(measurement, key, round(float(value), 4))
     return None
 
