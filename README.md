@@ -4,20 +4,20 @@
 
 `bat2influx` reads the battery's voltage, amperage, power, and state-of-charge (SOC) from a Victron
 Energy VenusOS battery inverter/charger and stores the values into an Influx database. From there the
-user is free to use thease measurements to their liking, like displaying in a Grafana dashboard.
+user is free to use these measurements to their liking, like displaying in a Grafana dashboard.
 
 ## How it works
 
 `bat2influx` connects to the MQTT broker running on VenusOS and to the InfluxDB provided by the
 user in parallel. It then triggers the sending of a telemetry message from VenusOS by publishing
-an empty message to `N/<serialnumber>/vebus/275/Dc/0/+` (every second) and to
-`N/<serialnumber>/vebus/275/Soc` (every 10 seconds) and stores the received values inside an
-InfluxDB database into a measurement (database name and measurement name are both configurable) under these fields: Current, Power,
-Voltage, Soc.
+an empty message to `N/<serialnumber>/vebus/275/Dc/0/+` (every second by default, configurable) and to
+`N/<serialnumber>/vebus/275/Soc` (every 10 seconds by default) and stores the received values inside an
+InfluxDB database into a measurement (database name and measurement name are both configurable) into
+these fields: Current, Power, Voltage, Soc.
 
 ## How it looks
 
-Once the measurements are stored into Influx, a simple influxQL SELECT statement (I hate flux) looks
+Once the measurements are stored into Influx, a simple InfluxQL SELECT statement (I hate flux) looks
 like this:
 
 ```
@@ -97,10 +97,11 @@ Q: Why I didn't want to use [venus-influx-loader](https://github.com/victronener
 A:  
 - It doesn't support password authentication towards the battery (i.e. towards the MQTT server)
 - It reads a gazillion times more values and stores them into influx than I'm interested in
-- It creates one measurement for every value stored, I wanted the values as different fields inside the same measurement
+- It creates one measurement for every value stored which makes it a PITA when displaying it in Grafana.
+I wanted the values as different fields inside the same measurement
 
 Q: Why is the project called venusos2influx and the program bat2influx?  
-A: I changed my mind after I had set up the name and forgot about it. Now I don't bother changing it again.
+A: I changed my mind after I had set up the project name and forgot about it. Now I don't bother changing it again.
 
 ## Mentions
 
@@ -111,11 +112,12 @@ Notable changes:
 - config file
 - triggering of sending of telemetry data from the battery - my VenusOS didn't publish any data unless I
 repeatedly published an empty message to a certain topic.
+- watchdog to reconnect to InfluxDB if errors occur
 
 ## Legal
 
 Victron Energy are not affiliated with this project in any way. Do not bother them if you have any problems
 with the code. Also, do not bother them or me if the code breaks your battery or causes your house to burn
-to the ground. I only guarantee that this code works mostly on my setup and so far my house still stands. Other
+to the ground. I only guarantee that this code works on my setup and so far my house still stands. Other
 than that there is no guarantee of any kind, especially not regarding the safety of this code or the fitness
 for any purpose.

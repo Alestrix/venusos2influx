@@ -16,7 +16,7 @@ import configparser
 
 import threading
 
-from time import sleep
+from time import sleep, time
 
 import json
 
@@ -32,6 +32,8 @@ INFLUXDB_USER = ''
 INFLUXDB_PASSWORD = ''
 INFLUXDB_DATABASE = 'bat'
 INFLUXDB_MEASUREMENT = 'dc'
+INFLUXDB_WATCHDOG_COUNT = 10
+INFLUXDB_RECONNECT_ATTEMPTS = 12
 
 MQTT_ADDRESS = 'multiplus'
 MQTT_USER = 'dummy'
@@ -43,6 +45,9 @@ MQTT_SERIAL = ''
 MQTT_INTERVAL = 1.0
 
 influxdb_client = None
+influx_error_count = 0
+influx_connect_fail_count = 0
+influx_mute_writing_until_time = 0
 
 
 class SensorData(NamedTuple):
@@ -62,6 +67,8 @@ def loadConfig(configFile="bat2influx.ini"):
     INFLUXDB_PASSWORD =  Config.get("Influx", "password", fallback=INFLUXDB_PASSWORD)
     INFLUXDB_DATABASE =  Config.get("Influx", "db", fallback=INFLUXDB_DATABASE)
     INFLUXDB_MEASUREMENT = Config.get("Influx", "measurement", fallback=INFLUXDB_MEASUREMENT)
+    INFLUXDB_WATCHDOG_COUNT = int(Config.get("Influx", "watchdog_count", fallback=INFLUXDB_WATCHDOG_COUNT))
+    INFLUXDB_RECONNECT_ATTEMPTS = int(Config.get("Influx", "reconnect_attempts", fallback=INFLUXDB_RECONNECT_ATTEMPTS))
 
     MQTT_ADDRESS = Config.get("Battery", "address")
     MQTT_PASSWORD = Config.get("Battery", "password")
@@ -102,8 +109,14 @@ def _parse_mqtt_message(topic, payload):
         return SensorData(measurement, key, round(float(value), 4))
     return None
 
-
 def _send_sensor_data_to_influxdb(sensor_data):
+    global influx_error_count
+    global influx_connect_fail_count
+    global influx_mute_writing_until_time
+
+    if time() < influx_mute_writing_until_time:
+        return
+
     json_body = [
         {
             'measurement': sensor_data.measurement,
@@ -112,7 +125,31 @@ def _send_sensor_data_to_influxdb(sensor_data):
             }
         }
     ]
-    influxdb_client.write_points(json_body)
+    try:
+        influxdb_client.write_points(json_body)
+        influx_error_count = 0
+        influx_connect_fail_count = 0
+    except Exception as err:
+        influx_error_count = influx_error_count + 1
+        print("Error writing data to InfluxDB:")
+        print(err)
+
+    if influx_error_count > INFLUXDB_WATCHDOG_COUNT:
+        print("Too many ({influx_error_count}) failures, reconnecting to InfluxDB")
+        influx_error_count = 0
+        # Don't want other write attempts to interfere with reconnect
+        influx_mute_writing_until_time = time() + 3
+        try:
+            _init_influxdb_database()
+            influx_connect_fail_count = 0
+        except Exception as err:
+            influx_connect_fail_count = influx_connect_fail_count + 1
+            print("Error reconnecting to InfluxDB:")
+            print(err)
+
+    if influx_connect_fail_count > 0 and influx_connect_fail_count % INFLUXDB_RECONNECT_ATTEMPTS == 0:
+        print(f"Reconnect failed after {influx_connect_fail_count} attempts, sleeping for 10 minutes")
+        influx_mute_writing_until_time = time() + 600
 
 
 def _init_influxdb_database():
@@ -127,7 +164,6 @@ def pub(mqtt_client):
     i = 0
     while True:
         mqtt_client.publish(f"R/{MQTT_SERIAL}/vebus/275/Dc/0", "")
-        #print(f'publishing to "R/{MQTT_SERIAL}/vebus/275/Dc/0"')
         i = (i + 1) % 10
         if i == 0:
             mqtt_client.publish(f"R/{MQTT_SERIAL}/vebus/275/Soc", "")
@@ -143,8 +179,8 @@ def main():
 
     mqtt_client.connect(MQTT_ADDRESS, 1883)
 
-    x = threading.Thread(target=pub, args=(mqtt_client,))
-    x.start()
+    mqtt_publisher = threading.Thread(target=pub, args=(mqtt_client,))
+    mqtt_publisher.start()
 
     mqtt_client.loop_forever()
 
