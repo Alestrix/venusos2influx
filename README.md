@@ -43,7 +43,7 @@ time                           Current Power Soc  Voltage
 2024-11-06T13:54:23.919809621Z               15.5 
 ```
 
-By grouping these measurements by second, the fields can be mapped to the same measurement:
+By grouping these entries by second, the fields can be mapped into the same series:
 ```
 > select mean(Current) as Current, mean(Power) as Power, mean(Voltage) as Voltage, mean(Soc) as Soc from dc where time > now()- 5s group by time(1s)
 name: dc
