@@ -36,7 +36,7 @@ INFLUXDB_MEASUREMENT = 'dc'
 MQTT_ADDRESS = 'multiplus'
 MQTT_USER = 'dummy'
 MQTT_PASSWORD = ''
-MQTT_TOPICS = []
+MQTT_SUBTOPICS = []
 MQTT_REGEXS = []
 MQTT_CLIENT_ID = 'MQTTInfluxDBBridge'
 MQTT_SERIAL = ''
@@ -54,7 +54,7 @@ def loadConfig(configFile="bat2influx.ini"):
     Config.read(configFile)
 
     global INFLUXDB_ADDRESS, INFLUXDB_USER, INFLUXDB_PASSWORD, INFLUXDB_DATABASE, INFLUXDB_MEASUREMENT, INFLUXDB_PORT
-    global MQTT_ADDRESS, MQTT_USER, MQTT_PASSWORD, MQTT_TOPICS, MQTT_REGEXS, MQTT_SERIAL, MQTT_INTERVAL
+    global MQTT_ADDRESS, MQTT_USER, MQTT_PASSWORD, MQTT_PUBTOPICS, MQTT_SUBTOPICS, MQTT_REGEXS, MQTT_SERIAL, MQTT_INTERVAL
 
     INFLUXDB_ADDRESS = Config.get("Influx", "address")
     INFLUXDB_PORT = Config.get("Influx", "port", fallback=INFLUXDB_PORT)
@@ -66,21 +66,23 @@ def loadConfig(configFile="bat2influx.ini"):
     MQTT_ADDRESS = Config.get("Battery", "address")
     MQTT_PASSWORD = Config.get("Battery", "password")
     MQTT_SERIAL = Config.get("Battery", "serial")
-    MQTT_TOPICS = [f'N/{MQTT_SERIAL}/vebus/275/Dc/0/+', f'N/{MQTT_SERIAL}/vebus/275/Soc']
-    MQTT_REGEXS = [f'N/{MQTT_SERIAL}/vebus/275/Dc/0/([^/]+)', f'N/{MQTT_SERIAL}/vebus/275/([^/]+)$']
+    MQTT_PUBTOPICS = [f'R/{MQTT_SERIAL}/vebus/275/Dc/0', f'R/{MQTT_SERIAL}/vebus/275/Soc', f'R/{MQTT_SERIAL}/vebus/275/Ac/ActiveIn/L1']
+    MQTT_SUBTOPICS = [f'N/{MQTT_SERIAL}/vebus/275/Dc/0/+', f'N/{MQTT_SERIAL}/vebus/275/Soc', f'N/{MQTT_SERIAL}/vebus/275/Ac/ActiveIn/L1/+']
+    MQTT_REGEXS = [f'N/{MQTT_SERIAL}/vebus/275/Dc/0/([^/]+)', f'N/{MQTT_SERIAL}/vebus/275/([^/]+)$', f'N/{MQTT_SERIAL}/vebus/275/Ac/ActiveIn/L1/([^/]+)']
     MQTT_INTERVAL = float(Config.get("Battery", "interval", fallback=MQTT_INTERVAL))
 
 
 def on_mqtt_connect(client, userdata, flags, rc):
     """ The callback for when the client receives a CONNACK response from the MQTT server."""
     print('Connected with result code ' + str(rc))
-    for topic in MQTT_TOPICS:
+    for topic in MQTT_SUBTOPICS:
+        # print('Subscribing to ' + topic)
         client.subscribe(topic)
 
 
 def on_mqtt_message(client, userdata, msg):
     """The callback for when a PUBLISH message is received from the MQTT server."""
-    # print(msg.topic + ' ' + str(msg.payload))
+    # print("Received: " + msg.topic + ' ' + str(msg.payload))
     sensor_data = _parse_mqtt_message(msg.topic, msg.payload.decode('utf-8'))
     if sensor_data is not None:
         #print(sensor_data)
@@ -88,10 +90,10 @@ def on_mqtt_message(client, userdata, msg):
 
 
 def _parse_mqtt_message(topic, payload):
-    match = re.match(MQTT_REGEXS[0], topic)
-    if not match:
-        match = re.match(MQTT_REGEXS[1], topic)
-    if match:
+    for mqttregex in MQTT_REGEXS:
+        match = re.match(mqttregex, topic)
+        if not match:
+            continue
         measurement = INFLUXDB_MEASUREMENT
         key = match.group(1)
         if key in ['Temperature', 'MaxChargeCurrent']:
@@ -126,11 +128,12 @@ def _init_influxdb_database():
 def pub(mqtt_client):
     i = 0
     while True:
-        mqtt_client.publish(f"R/{MQTT_SERIAL}/vebus/275/Dc/0", "")
-        #print(f'publishing to "R/{MQTT_SERIAL}/vebus/275/Dc/0"')
+        for pubtopic in MQTT_PUBTOPICS:
+            if "Soc" in pubtopic and i != 0:
+                continue
+            mqtt_client.publish(pubtopic, "")
+            # print(f'publishing to "{pubtopic}"')
         i = (i + 1) % 10
-        if i == 0:
-            mqtt_client.publish(f"R/{MQTT_SERIAL}/vebus/275/Soc", "")
         sleep(MQTT_INTERVAL)
 
 def main():
