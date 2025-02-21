@@ -2,18 +2,20 @@
 
 ## Purpose
 
-`bat2influx` reads the battery's voltage, amperage, power, and state-of-charge (SOC) from a Victron
-Energy VenusOS battery inverter/charger and stores the values into an Influx database. From there the
+`bat2influx` reads the battery's (DC) voltage, current, power, and state-of-charge (SOC) from a Victron
+Energy VenusOS battery inverter/charger and the voltage, current and both active and apparent power from
+the AC side and stores the values into an Influx database. From there the
 user is free to use thease measurements to their liking, like displaying in a Grafana dashboard.
 
 ## How it works
 
 `bat2influx` connects to the MQTT broker running on VenusOS and to the InfluxDB provided by the
 user in parallel. It then triggers the sending of a telemetry message from VenusOS by publishing
-an empty message to `N/<serialnumber>/vebus/275/Dc/0/+` (every second) and to
-`N/<serialnumber>/vebus/275/Soc` (every 10 seconds) and stores the received values inside an
-InfluxDB database into a measurement (database name and measurement name are both configurable) under these fields: Current, Power,
-Voltage, Soc.
+an empty message to various topics starting with `R/<serialnumber>/vebus/275/` (every second) and to
+`R/<serialnumber>/vebus/275/Soc` (every 10 seconds) and stores the received values inside an
+InfluxDB database into a measurement (database name and measurement name are both configurable) under these fields:
+- for DC: Current, Voltage, Power, Soc.
+- for AC: I, V, P, S
 
 ## How it looks
 
@@ -23,38 +25,45 @@ like this:
 ```
 > select * from dc where time > now()-5s 
 name: dc
-time                           Current Power Soc  Voltage
-----                           ------- ----- ---  -------
-2024-11-06T13:54:19.853411972Z         22         
-2024-11-06T13:54:19.888644485Z                    52.26
-2024-11-06T13:54:19.905109204Z 0                  
-2024-11-06T13:54:20.856328777Z         21         
-2024-11-06T13:54:20.938091223Z                    52.26
-2024-11-06T13:54:20.972238084Z 0                  
-2024-11-06T13:54:21.85650829Z          22         
-2024-11-06T13:54:21.891096719Z                    52.26
-2024-11-06T13:54:21.900385275Z 0                  
-2024-11-06T13:54:22.857095492Z         22         
-2024-11-06T13:54:22.884699808Z                    52.26
-2024-11-06T13:54:22.894218306Z 0                  
-2024-11-06T13:54:23.866700336Z         22         
-2024-11-06T13:54:23.878145991Z                    52.24
-2024-11-06T13:54:23.886577557Z 0                  
-2024-11-06T13:54:23.919809621Z               15.5 
+time                           Current F       I     P    Power S    Soc  V      Voltage
+----                           ------- -       -     -    ----- -    ---  -      -------
+2025-02-21T22:08:01.788934596Z                            -738                   
+2025-02-21T22:08:01.835538738Z                                                   52.06
+2025-02-21T22:08:01.843789552Z -15                                               
+2025-02-21T22:08:01.852458743Z                                       28.5        
+2025-02-21T22:08:01.860366589Z                 -3.32                             
+2025-02-21T22:08:01.869456173Z                       -749                        
+2025-02-21T22:08:01.879514895Z                                  -804             
+2025-02-21T22:08:01.903708535Z                                            242.33 
+2025-02-21T22:08:01.9137971Z           50.1026                                   
+2025-02-21T22:08:02.741105314Z                            -747                   
+2025-02-21T22:08:02.764027173Z                                                   52.06
+2025-02-21T22:08:02.772328114Z -14.9                                             
+2025-02-21T22:08:02.779616795Z                 -3.32                             
+2025-02-21T22:08:02.789391378Z                       -754                        
+2025-02-21T22:08:02.796424865Z                                  -804             
+2025-02-21T22:08:02.805218721Z                                            242.33 
+2025-02-21T22:08:02.814819592Z         50.1026                                   
+2025-02-21T22:08:03.68915136Z                             -737                   
+2025-02-21T22:08:03.713972541Z                                                   52.06
+2025-02-21T22:08:03.721916981Z -15.6                                             
+2025-02-21T22:08:03.730049076Z                 -3.32                             
+2025-02-21T22:08:03.738515146Z                       -763                        
+2025-02-21T22:08:03.746770476Z                                  -804             
+2025-02-21T22:08:03.755189383Z                                            242.33 
+2025-02-21T22:08:03.763574336Z         50.1026                                   
+
 ```
 
-By grouping these entries by second, the fields can be mapped into the same series:
+By grouping these entries by second, the fields can be mapped into the same series (ignoring apparent power `S` here):
 ```
-> select mean(Current) as Current, mean(Power) as Power, mean(Voltage) as Voltage, mean(Soc) as Soc from dc where time > now()- 5s group by time(1s)
+> select mean(Current) as DC_I, mean(Voltage) as DC_U, mean(Power) as DC_P, mean(Soc) as Soc, mean(I) as AC_I, mean(V) as AC_U, mean(P) as AC_P FROM dc WHERE here time > now()-5s GROUP BY time(1s)
 name: dc
-time                 Current Power Voltage Soc
-----                 ------- ----- ------- ---
-2024-11-06T13:56:31Z                       
-2024-11-06T13:56:32Z 0       22    52.26   
-2024-11-06T13:56:33Z 0       22    52.26   
-2024-11-06T13:56:34Z 0       22    52.26   15.5
-2024-11-06T13:56:35Z 0       22    52.26   
-2024-11-06T13:56:36Z 0       22    52.26   
+time                 DC_I  DC_U  DC_P Soc  AC_I  AC_V   AC_P
+----                 ----  ----  ---- ---  ----  ----   ----
+2025-02-21T22:08:01Z -15   52.06 -738 28.5 -3.32 242.33 -749
+2025-02-21T22:08:02Z -14.9 52.06 -747      -3.32 242.33 -754
+2025-02-21T22:08:03Z -15.6 52.06 -737      -3.32 242.33 -763
 ```
 
 ## How to configure
