@@ -19,9 +19,10 @@ jobs:
     - name: create IMAGE_ID with lowercase repo-owner (shame on GitHub for making this so cumbersome!)
       run: |
         echo "IMAGE_ID=ghcr.io/${REPO@L}/bat2influx:${TAG}" >> ${GITHUB_ENV}
+        echo "IMAGE_ID2=ghcr.io/${REPO@L}/bat2influx:latest" >> ${GITHUB_ENV}
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag $IMAGE_ID
+      run: docker build . --file Dockerfile --tag $IMAGE_ID --tag $IMAGE_ID2
     - name: Log in to registry
       run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
     - name: Push Docker image
-      run: docker push $IMAGE_ID
+      run: docker push --all-tags $IMAGE_ID
