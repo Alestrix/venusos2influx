@@ -3,8 +3,8 @@
 ## Purpose
 
 `bat2influx` reads the battery's (DC) voltage, current, power, and state-of-charge (SOC) from a Victron
-Energy VenusOS battery inverter/charger and the voltage, current and both active and apparent power from
-the AC side and stores the values into an Influx database. From there the
+Energy VenusOS battery inverter/charger and the voltage, current and both active and apparent power and
+frequence from the AC side and stores the values into an Influx database. From there the
 user is free to use thease measurements to their liking, like displaying in a Grafana dashboard.
 
 ## How it works
