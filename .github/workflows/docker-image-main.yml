@@ -1,0 +1,27 @@
+name: Docker Image CI when pushing to default branch
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REPO: ${{ github.repository_owner }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: create IMAGE_ID with lowercase repo-owner (shame on GitHub for making this so cumbersome!)
+      run: |
+        echo "IMAGE_ID=ghcr.io/${REPO@L}/bat2influx:edge" >> ${GITHUB_ENV}
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag $IMAGE_ID
+    - name: Log in to registry
+      run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    - name: Push Docker image
+      run: docker push $IMAGE_ID
