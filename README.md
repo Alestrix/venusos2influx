@@ -111,6 +111,10 @@ A:
 Q: Why is the project called venusos2influx and the program bat2influx?  
 A: I changed my mind after I had set up the name and forgot about it. Now I don't bother changing it again.
 
+Q: Why don't you just use modbus? It's less complicated than MQTT.
+A: I didn't know how to do modbus at first. After I looked into it I found out that the AC-Power (`/Ac/ActiveIn/L1/P`) that
+has a precission of 1 watt when read via MQTT only has a precission of 10 watts when read via modbus. That's a no-go for me.
+
 ## Mentions
 
 The code is heavily based on [this](https://gist.github.com/zufardhiyaulhaq/fe322f61b3012114379235341b935539)
