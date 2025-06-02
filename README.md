@@ -15,7 +15,7 @@ an empty message to various topics starting with `R/<serialnumber>/vebus/275/` (
 `R/<serialnumber>/vebus/275/Soc` (every 10 seconds) and stores the received values inside an
 InfluxDB database into a measurement (database name and measurement name are both configurable) under these fields:
 - for DC: Current, Voltage, Power, Soc.
-- for AC: I, V, P, S
+- for AC: I (current), V (voltage), P (power), S (apparent power)
 
 ## How it looks
 
