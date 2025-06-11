@@ -13,6 +13,7 @@ https://gist.github.com/zufardhiyaulhaq/fe322f61b3012114379235341b935539
 import re
 from typing import NamedTuple
 import configparser
+from time import time
 
 import threading
 
@@ -44,7 +45,8 @@ MQTT_SERIAL = ''
 MQTT_INTERVAL = 1.0
 
 influxdb_client = None
-
+failed_writes = []
+last_influx_connect_attempt_time = 0
 
 class SensorData(NamedTuple):
     measurement: str
@@ -58,7 +60,7 @@ def loadConfig(configFile="bat2influx.ini"):
     global MQTT_ADDRESS, MQTT_USER, MQTT_PASSWORD, MQTT_PUBTOPICS, MQTT_SUBTOPICS, MQTT_REGEXS, MQTT_SERIAL, MQTT_INTERVAL
 
     INFLUXDB_ADDRESS = Config.get("Influx", "address")
-    INFLUXDB_PORT = Config.get("Influx", "port", fallback=INFLUXDB_PORT)
+    INFLUXDB_PORT = int(Config.get("Influx", "port", fallback=INFLUXDB_PORT))
     INFLUXDB_USER =  Config.get("Influx", "user", fallback=INFLUXDB_USER)
     INFLUXDB_PASSWORD =  Config.get("Influx", "password", fallback=INFLUXDB_PASSWORD)
     INFLUXDB_DATABASE =  Config.get("Influx", "db", fallback=INFLUXDB_DATABASE)
@@ -77,7 +79,7 @@ def on_mqtt_connect(client, userdata, flags, rc):
     """ The callback for when the client receives a CONNACK response from the MQTT server."""
     print('Connected with result code ' + str(rc))
     for topic in MQTT_SUBTOPICS:
-        # print('Subscribing to ' + topic)
+        print('Subscribing to ' + topic)
         client.subscribe(topic)
 
 
@@ -86,7 +88,6 @@ def on_mqtt_message(client, userdata, msg):
     # print("Received: " + msg.topic + ' ' + str(msg.payload))
     sensor_data = _parse_mqtt_message(msg.topic, msg.payload.decode('utf-8'))
     if sensor_data is not None:
-        #print(sensor_data)
         _send_sensor_data_to_influxdb(sensor_data)
 
 
@@ -107,6 +108,7 @@ def _parse_mqtt_message(topic, payload):
 
 
 def _send_sensor_data_to_influxdb(sensor_data):
+    global failed_writes
     json_body = [
         {
             'measurement': sensor_data.measurement,
@@ -115,16 +117,73 @@ def _send_sensor_data_to_influxdb(sensor_data):
             }
         }
     ]
-    influxdb_client.write_points(json_body)
+    if influxdb_client == None:
+        print("InfluxDB connection not yet initialised. This should never happen - probably a glitch in the Matrix!")
+        print("Storing data for retry.")
+        _append_failed_writes(json_body)
+    else:
+        try:
+            influxdb_client.write_points(json_body)
+        except Exception as e:
+            print(f"Error writing to InfluxDB: {e}. Storing data for retry.")
+            _append_failed_writes(json_body)
+    _retry_failed_writes()
+
+def _append_failed_writes(entry):
+    entry["time"]=int(time()*1000)
+    failed_writes.append(entry)
+
+def _retry_failed_writes():
+    global influxdb_client
+    global failed_writes
+    global last_influx_connect_attempt_time
+
+    if not failed_writes:
+        return
+    
+    if len(failed_writes) == 0:
+        return
+    
+    try:
+        influxdb_client.close() # type: ignore
+    except Exception:
+        pass
+
+    # Don't reconnect earlier than 10s after previous reconnect
+    if (time() - last_influx_connect_attempt_time) < 10:
+        return
+    else:
+        # update reconnect (attempt) timer
+        last_influx_connect_attempt_time = int(time())
+        print("Attempting reconnect.")
+        try:
+            _init_influxdb_database()
+        except Exception:
+            return  # If InfluxDB is still down, stop retrying for now
+
+    successful = []
+    for entry in failed_writes:
+        try:
+            influxdb_client.write_points(entry, time_precision="ms") # type: ignore
+            successful.append(entry)
+        except Exception:
+            break  # If InfluxDB is still down, stop retrying for now
+
+    # Only keep unsuccessfully written entries
+    failed_writes = [entry for entry in failed_writes if entry not in successful]
 
 
 def _init_influxdb_database():
     global influxdb_client
+    global last_influx_connect_attempt_time
+    print("Connecting to InfluxDB.")
     influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, INFLUXDB_PORT, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
     databases = influxdb_client.get_list_database()
     if len(list(filter(lambda x: x['name'] == INFLUXDB_DATABASE, databases))) == 0:
         influxdb_client.create_database(INFLUXDB_DATABASE)
     influxdb_client.switch_database(INFLUXDB_DATABASE)
+    last_influx_connect_attempt_time = int(time())
+
 
 def pub(mqtt_client):
     i = 0
@@ -133,14 +192,13 @@ def pub(mqtt_client):
             if "Soc" in pubtopic and i != 0:
                 continue
             mqtt_client.publish(pubtopic, "")
-            # print(f'publishing to "{pubtopic}"')
         i = (i + 1) % 10
         sleep(MQTT_INTERVAL)
 
 def main():
     _init_influxdb_database()
 
-    mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, MQTT_CLIENT_ID)
+    mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION1, MQTT_CLIENT_ID) # type: ignore
     mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
     mqtt_client.on_connect = on_mqtt_connect
     mqtt_client.on_message = on_mqtt_message
